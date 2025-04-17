@@ -1,0 +1,377 @@
+<!--
+This application uses @imagemagick/magick-wasm, a WebAssembly implementation of ImageMagick.
+Original project: https://github.com/dlemstra/magick-wasm
+License: Apache-2.0
+
+Inspired by the blog post "HDR-Infused Emoji" by Corry Haines:
+https://sharpletters.net/2025/04/16/hdr-emoji/
+
+Created by Cristian Rivera
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HDRify</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      background: white;
+      border-radius: 4px;
+      padding: 1.5rem;
+      border: 1px solid #e0e0e0;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .upload-zone {
+      width: 100%;
+      max-width: 500px;
+      height: 120px;
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      background-color: #f9f9f9;
+    }
+
+    .upload-zone:hover {
+      border-color: #666;
+    }
+
+    .upload-zone svg {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 8px;
+      color: #666;
+    }
+
+    .upload-zone p {
+      margin: 0;
+      color: #666;
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .process-btn {
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .process-btn:hover {
+      background-color: #3367d6;
+    }
+
+    .process-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .images {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .images {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .image-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .image-container {
+      position: relative;
+      min-height: 200px;
+      border-radius: 4px;
+      overflow: hidden;
+      background-color: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e0e0e0;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      max-height: 350px;
+    }
+
+    .image-placeholder {
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .image-label {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background-color: #34a853;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .download-btn:hover {
+      background-color: #2d8d46;
+    }
+
+    .download-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, .3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>HDRify</h1>
+
+  <div class="app">
+    <div class="controls">
+      <div class="upload-zone" id="upload-zone">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+        <p>Select an image or drop it here</p>
+        <input type="file" id="file-input" accept="image/*">
+      </div>
+
+      <button class="process-btn" id="process-btn" disabled>
+        Process Image
+      </button>
+    </div>
+
+    <div class="images">
+      <div class="image-panel">
+        <div class="image-label">Original</div>
+        <div class="image-container" id="input-container">
+          <div class="image-placeholder" id="input-placeholder">No image selected</div>
+          <img id="input-preview" style="display: none">
+        </div>
+      </div>
+
+      <div class="image-panel">
+        <div class="image-label">Processed</div>
+        <div class="image-container" id="output-container">
+          <div class="image-placeholder" id="output-placeholder">Output will appear here</div>
+          <img id="output-preview" style="display: none">
+        </div>
+        <a href="#" class="download-btn" id="download-btn" style="display: none">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Download</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: #666;">
+    Created by Cristian Rivera | Inspired by <a href="https://sharpletters.net/2025/04/16/hdr-emoji/" target="_blank">HDR-Infused Emoji</a> by Corry Haines
+  </div>
+
+  <script type="module">
+    import * as ImageMagick from 'https://esm.run/@imagemagick/magick-wasm';
+
+    const fileInput = document.getElementById('file-input');
+    const uploadZone = document.getElementById('upload-zone');
+    const processBtn = document.getElementById('process-btn');
+    const inputPreview = document.getElementById('input-preview');
+    const outputPreview = document.getElementById('output-preview');
+    const inputPlaceholder = document.getElementById('input-placeholder');
+    const outputPlaceholder = document.getElementById('output-placeholder');
+    const downloadBtn = document.getElementById('download-btn');
+
+    let magickReady = false;
+    let iccProfileData = null;
+    let spinner = '<div class="spinner"></div>';
+
+    async function init() {
+      try {
+        await ImageMagick.initializeImageMagick();
+        magickReady = true;
+
+        await loadIccProfile();
+
+        checkProcessReady();
+      } catch (error) {
+        console.error('Initialization error:', error);
+      }
+    }
+
+    async function loadIccProfile() {
+      try {
+        const response = await fetch('./2020_profile.icc');
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+        const arrayBuffer = await response.arrayBuffer();
+        iccProfileData = new Uint8Array(arrayBuffer);
+        return true;
+      } catch (error) {
+        throw new Error(`ICC profile error: ${error.message}`);
+      }
+    }
+
+    function checkProcessReady() {
+      processBtn.disabled = !(magickReady && iccProfileData && fileInput.files.length > 0);
+    }
+
+    function handleFileSelect(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        inputPreview.src = e.target.result;
+        inputPreview.style.display = 'block';
+        inputPlaceholder.style.display = 'none';
+        checkProcessReady();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processImage() {
+      if (!fileInput.files.length) return;
+
+      try {
+        processBtn.disabled = true;
+        processBtn.innerHTML = spinner + '<span style="vertical-align: middle">Processing</span>';
+
+        const file = fileInput.files[0];
+        const arrayBuffer = await file.arrayBuffer();
+        const inputImageData = new Uint8Array(arrayBuffer);
+
+        ImageMagick.ImageMagick.read(inputImageData, (image) => {
+          image.setAttribute('quantum:format', 'floating-point');
+          image.colorSpace = ImageMagick.ColorSpace.RGB;
+          image.autoGamma();
+          image.evaluate(ImageMagick.EvaluateOperator.Multiply, new ImageMagick.Percentage(1.5));
+          image.evaluate(ImageMagick.EvaluateOperator.Pow, new ImageMagick.Percentage(0.9));
+          image.colorSpace = ImageMagick.ColorSpace.sRGB;
+          image.depth = 16;
+          image.setProfile("icc", iccProfileData);
+          image.format = ImageMagick.MagickFormat.Png;
+
+          image.write((outputData) => {
+            const blob = new Blob([outputData], { type: 'image/png' });
+            const url = URL.createObjectURL(blob);
+
+            outputPreview.src = url;
+            outputPreview.style.display = 'block';
+            outputPlaceholder.style.display = 'none';
+            downloadBtn.href = url;
+            downloadBtn.style.display = 'inline-flex';
+            downloadBtn.download = `hdrified_${file.name.split('.')[0]}.png`;
+
+            processBtn.disabled = false;
+            processBtn.innerHTML = 'Process Image';
+          });
+        });
+      } catch (error) {
+        processBtn.disabled = false;
+        processBtn.innerHTML = 'Process Image';
+        console.error('Processing error:', error);
+      }
+    }
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '#666';
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.style.borderColor = '#ccc';
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '#ccc';
+
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      handleFileSelect(fileInput.files[0]);
+    });
+
+    processBtn.addEventListener('click', processImage);
+
+    init();
+  </script>
+</body>
+
+</html>
