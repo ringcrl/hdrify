@@ -84,6 +84,22 @@ Created by Cristian Rivera
       display: none;
     }
 
+    .mode-toggle {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+
+    .mode-toggle label {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+      cursor: pointer;
+    }
+
+    .mode-toggle input[type="radio"] {
+      margin-right: 0.5rem;
+    }
+
     .process-btn {
       padding: 10px 20px;
       font-size: 1rem;
@@ -196,6 +212,17 @@ Created by Cristian Rivera
 
   <div class="app">
     <div class="controls">
+      <div class="mode-toggle">
+        <label>
+          <input type="radio" name="mode" value="sane" checked>
+          Sane Mode
+        </label>
+        <label>
+          <input type="radio" name="mode" value="chaos">
+          Chaos Mode
+        </label>
+      </div>
+
       <div class="upload-zone" id="upload-zone">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -251,9 +278,11 @@ Created by Cristian Rivera
     const inputPlaceholder = document.getElementById('input-placeholder');
     const outputPlaceholder = document.getElementById('output-placeholder');
     const downloadBtn = document.getElementById('download-btn');
+    const modeRadios = document.querySelectorAll('input[name="mode"]');
 
     let magickReady = false;
-    let iccProfileData = null;
+    let chaosProfileData = null;
+    let saneProfileData = null;
     let spinner = '<div class="spinner"></div>';
 
     async function init() {
@@ -261,7 +290,10 @@ Created by Cristian Rivera
         await ImageMagick.initializeImageMagick();
         magickReady = true;
 
-        await loadIccProfile();
+        await Promise.all([
+          loadIccProfile('chaos', './chaos.icc'),
+          loadIccProfile('sane', './sane.icc')
+        ]);
 
         checkProcessReady();
       } catch (error) {
@@ -269,21 +301,28 @@ Created by Cristian Rivera
       }
     }
 
-    async function loadIccProfile() {
+    async function loadIccProfile(type, path) {
       try {
-        const response = await fetch('./2020_profile.icc');
+        const response = await fetch(path);
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
         const arrayBuffer = await response.arrayBuffer();
-        iccProfileData = new Uint8Array(arrayBuffer);
+        const profileData = new Uint8Array(arrayBuffer);
+
+        if (type === 'chaos') {
+          chaosProfileData = profileData;
+        } else if (type === 'sane') {
+          saneProfileData = profileData;
+        }
+
         return true;
       } catch (error) {
-        throw new Error(`ICC profile error: ${error.message}`);
+        throw new Error(`ICC profile error (${type}): ${error.message}`);
       }
     }
 
     function checkProcessReady() {
-      processBtn.disabled = !(magickReady && iccProfileData && fileInput.files.length > 0);
+      processBtn.disabled = !(magickReady && chaosProfileData && saneProfileData && fileInput.files.length > 0);
     }
 
     function handleFileSelect(file) {
@@ -299,6 +338,15 @@ Created by Cristian Rivera
       reader.readAsDataURL(file);
     }
 
+    function getSelectedMode() {
+      for (const radio of modeRadios) {
+        if (radio.checked) {
+          return radio.value;
+        }
+      }
+      return 'sane'; // Default to sane mode
+    }
+
     async function processImage() {
       if (!fileInput.files.length) return;
 
@@ -309,16 +357,26 @@ Created by Cristian Rivera
         const file = fileInput.files[0];
         const arrayBuffer = await file.arrayBuffer();
         const inputImageData = new Uint8Array(arrayBuffer);
+        const mode = getSelectedMode();
 
         ImageMagick.ImageMagick.read(inputImageData, (image) => {
           image.setAttribute('quantum:format', 'floating-point');
           image.colorSpace = ImageMagick.ColorSpace.RGB;
-          image.autoGamma();
-          image.evaluate(ImageMagick.EvaluateOperator.Multiply, new ImageMagick.Percentage(1.5));
-          image.evaluate(ImageMagick.EvaluateOperator.Pow, new ImageMagick.Percentage(0.9));
-          image.colorSpace = ImageMagick.ColorSpace.sRGB;
-          image.depth = 16;
-          image.setProfile("icc", iccProfileData);
+
+          if (mode === 'chaos') {
+            // Chaos mode processing
+            image.autoGamma();
+            image.evaluate(ImageMagick.EvaluateOperator.Multiply, new ImageMagick.Percentage(1.5));
+            image.evaluate(ImageMagick.EvaluateOperator.Pow, new ImageMagick.Percentage(0.9));
+            image.colorSpace = ImageMagick.ColorSpace.sRGB;
+            image.depth = 16;
+            image.setProfile("icc", chaosProfileData);
+          } else {
+            // Sane mode processing
+            image.setProfile("icc", saneProfileData);
+            image.evaluate(ImageMagick.Channels.RGB, ImageMagick.EvaluateOperator.Log, 30);
+          }
+
           image.format = ImageMagick.MagickFormat.Png;
 
           image.write((outputData) => {
@@ -330,7 +388,7 @@ Created by Cristian Rivera
             outputPlaceholder.style.display = 'none';
             downloadBtn.href = url;
             downloadBtn.style.display = 'inline-flex';
-            downloadBtn.download = `hdrified_${file.name.split('.')[0]}.png`;
+            downloadBtn.download = `hdrified_${mode}_${file.name.split('.')[0]}.png`;
 
             processBtn.disabled = false;
             processBtn.innerHTML = 'Process Image';
