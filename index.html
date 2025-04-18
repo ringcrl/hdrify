@@ -358,13 +358,16 @@ Created by Cristian Rivera
         const arrayBuffer = await file.arrayBuffer();
         const inputImageData = new Uint8Array(arrayBuffer);
         const mode = getSelectedMode();
+        const readSettings = new ImageMagick.MagickReadSettings();
 
-        ImageMagick.ImageMagick.read(inputImageData, (image) => {
-          image.setAttribute('quantum:format', 'floating-point');
-          image.colorSpace = ImageMagick.ColorSpace.RGB;
+        if (mode === 'chaos') {
+          readSettings.setDefine('quantum:format', 'floating-point');
+        }
 
+        ImageMagick.ImageMagick.read(inputImageData, readSettings, (image) => {
           if (mode === 'chaos') {
             // Chaos mode processing
+            image.colorSpace = ImageMagick.ColorSpace.RGB;
             image.autoGamma();
             image.evaluate(ImageMagick.EvaluateOperator.Multiply, new ImageMagick.Percentage(1.5));
             image.evaluate(ImageMagick.EvaluateOperator.Pow, new ImageMagick.Percentage(0.9));
