@@ -1,0 +1,211 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background: white;
+  border-radius: 4px;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Controls section */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mode-toggle {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.mode-toggle label {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.mode-toggle input[type="radio"] {
+  margin-right: 0.5rem;
+}
+
+.upload-zone {
+  width: 100%;
+  max-width: 500px;
+  height: 120px;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+  background-color: #f9f9f9;
+}
+
+.upload-zone:hover {
+  border-color: #666;
+  background-color: #f5f5f5;
+}
+
+.upload-zone svg {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.upload-zone p {
+  margin: 0;
+  color: #666;
+}
+
+.upload-zone input {
+  display: none;
+}
+
+.process-btn {
+  padding: 10px 20px;
+  font-size: 1rem;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.process-btn:hover {
+  background-color: #3367d6;
+}
+
+.process-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Images section */
+.images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .images {
+    grid-template-columns: 1fr;
+  }
+}
+
+.image-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.image-container {
+  position: relative;
+  min-height: 200px;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e0e0;
+}
+
+.image-container img {
+  max-width: 100%;
+  max-height: 350px;
+}
+
+.image-placeholder {
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.image-label {
+  font-weight: 500;
+  color: #333;
+}
+
+/* Download button */
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #34a853;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.download-btn:hover {
+  background-color: #2d8d46;
+}
+
+.download-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, .3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Footer */
+.footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.footer a {
+  color: #4285f4;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
