@@ -1,4 +1,4 @@
-import * as ImageMagick from 'https://esm.run/@imagemagick/magick-wasm';
+import * as ImageMagick from 'https://esm.run/@imagemagick/magick-wasm@0.0.34';
 
 // DOM Elements
 const elements = {
