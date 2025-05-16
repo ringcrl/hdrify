@@ -1,75 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HDRify</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HDRify</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
+  <body>
+    <h1>HDRify</h1>
 
-<body>
-  <h1>HDRify</h1>
-
-  <div class="app">
-    <div class="controls">
-      <div class="mode-toggle">
-        <label>
-          <input type="radio" name="mode" value="sane" checked>
-          Sane Mode
-        </label>
-        <label>
-          <input type="radio" name="mode" value="chaos">
-          Chaos Mode
-        </label>
-      </div>
-
-      <div class="upload-zone" id="upload-zone">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-        <p>Select an image or drop it here</p>
-        <input type="file" id="file-input" accept="image/*">
-      </div>
-
-      <button class="process-btn" id="process-btn" disabled>
-        Process Image
-      </button>
-    </div>
-
-    <div class="images">
-      <div class="image-panel">
-        <div class="image-label">Original</div>
-        <div class="image-container" id="input-container">
-          <div class="image-placeholder" id="input-placeholder">No image selected</div>
-          <img id="input-preview" style="display: none">
-        </div>
-      </div>
-
-      <div class="image-panel">
-        <div class="image-label">Processed</div>
-        <div class="image-container" id="output-container">
-          <div class="image-placeholder" id="output-placeholder">Output will appear here</div>
-          <img id="output-preview" style="display: none">
-        </div>
-        <a href="#" class="download-btn" id="download-btn" style="display: none">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    <div class="app">
+      <div class="controls">
+        <div class="upload-zone" id="upload-zone">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+            />
           </svg>
-          <span>Download</span>
-        </a>
+          <p>Select an image or drop it here</p>
+          <input type="file" id="file-input" accept="image/*" />
+        </div>
+
+        <button class="process-btn" id="process-btn" disabled>
+          Process Image
+        </button>
+      </div>
+
+      <div class="images">
+        <div class="image-panel">
+          <div class="image-label">Original</div>
+          <div class="image-container" id="input-container">
+            <div class="image-placeholder" id="input-placeholder">
+              No image selected
+            </div>
+            <img id="input-preview" style="display: none" />
+          </div>
+        </div>
+
+        <div class="image-panel">
+          <div class="image-label">Processed</div>
+          <div class="image-container" id="output-container">
+            <div class="image-placeholder" id="output-placeholder">
+              Output will appear here
+            </div>
+            <img id="output-preview" style="display: none" />
+          </div>
+          <a
+            href="#"
+            class="download-btn"
+            id="download-btn"
+            style="display: none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            <span>Download</span>
+          </a>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="footer">
-    Created by Cristian Rivera (<a href="https://github.com/cristian-rivera/hdrify" target="_blank">View on GitHub</a>) | Inspired by <a href="https://sharpletters.net/2025/04/16/hdr-emoji/"
-      target="_blank">HDR-Infused Emoji</a> by Corry Haines
-  </div>
-
-  <script type="module" src="app.js"></script>
-</body>
-
+    <script type="module" src="app.js"></script>
+  </body>
 </html>

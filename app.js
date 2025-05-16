@@ -9,14 +9,12 @@ const elements = {
   outputPreview: document.getElementById('output-preview'),
   inputPlaceholder: document.getElementById('input-placeholder'),
   outputPlaceholder: document.getElementById('output-placeholder'),
-  downloadBtn: document.getElementById('download-btn'),
-  modeRadios: document.querySelectorAll('input[name="mode"]')
+  downloadBtn: document.getElementById('download-btn')
 };
 
 // App state
 const state = {
   magickReady: false,
-  chaosProfileData: null,
   saneProfileData: null,
   selectedFile: null
 };
@@ -36,7 +34,6 @@ const UI = {
   updateProcessButtonState() {
     elements.processBtn.disabled = !(
       state.magickReady &&
-      state.chaosProfileData &&
       state.saneProfileData &&
       elements.fileInput.files.length > 0
     );
@@ -48,13 +45,13 @@ const UI = {
     elements.inputPlaceholder.style.display = 'none';
   },
 
-  displayOutputImage(url, filename, mode) {
+  displayOutputImage(url, filename) {
     elements.outputPreview.src = url;
     elements.outputPreview.style.display = 'block';
     elements.outputPlaceholder.style.display = 'none';
     elements.downloadBtn.href = url;
     elements.downloadBtn.style.display = 'inline-flex';
-    elements.downloadBtn.download = `hdrified_${mode}_${filename.split('.')[0]}.png`;
+    elements.downloadBtn.download = `hdrified_${filename.split('.')[0]}.png`;
   },
 
   updateUploadZoneBorder(color) {
@@ -69,10 +66,7 @@ const ImageProcessor = {
       await ImageMagick.initializeImageMagick();
       state.magickReady = true;
 
-      await Promise.all([
-        this.loadIccProfile('chaos', './chaos.icc'),
-        this.loadIccProfile('sane', './sane.icc')
-      ]);
+      await this.loadIccProfile('./sane.icc');
 
       UI.updateProcessButtonState();
     } catch (error) {
@@ -80,48 +74,19 @@ const ImageProcessor = {
     }
   },
 
-  async loadIccProfile(type, path) {
+  async loadIccProfile(path) {
     try {
       const response = await fetch(path);
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
       const arrayBuffer = await response.arrayBuffer();
       const profileData = new Uint8Array(arrayBuffer);
-
-      if (type === 'chaos') {
-        state.chaosProfileData = profileData;
-      } else if (type === 'sane') {
-        state.saneProfileData = profileData;
-      }
+      state.saneProfileData = profileData;
 
       return true;
     } catch (error) {
-      throw new Error(`ICC profile error (${type}): ${error.message}`);
+      throw new Error(`ICC profile error: ${error.message}`);
     }
-  },
-
-  getSelectedMode() {
-    for (const radio of elements.modeRadios) {
-      if (radio.checked) {
-        return radio.value;
-      }
-    }
-    return 'sane'; // Default to sane mode
-  },
-
-  applyChaosMode(image) {
-    image.colorSpace = ImageMagick.ColorSpace.RGB;
-    image.autoGamma();
-    image.evaluate(ImageMagick.EvaluateOperator.Multiply, new ImageMagick.Percentage(1.5));
-    image.evaluate(ImageMagick.EvaluateOperator.Pow, new ImageMagick.Percentage(0.9));
-    image.colorSpace = ImageMagick.ColorSpace.sRGB;
-    image.depth = 16;
-    image.setProfile("icc", state.chaosProfileData);
-  },
-
-  applySaneMode(image) {
-    image.setProfile("icc", state.saneProfileData);
-    image.evaluate(ImageMagick.Channels.RGB, ImageMagick.EvaluateOperator.Log, 30);
   },
 
   async processImage() {
@@ -136,22 +101,12 @@ const ImageProcessor = {
       const file = elements.fileInput.files[0];
       const arrayBuffer = await file.arrayBuffer();
       const inputImageData = new Uint8Array(arrayBuffer);
-      const mode = this.getSelectedMode();
-      const readSettings = new ImageMagick.MagickReadSettings();
-
-      // Apply mode-specific settings
-      if (mode === 'chaos') {
-        readSettings.setDefine('quantum:format', 'floating-point');
-      }
 
       // Process image with ImageMagick
-      ImageMagick.ImageMagick.read(inputImageData, readSettings, (image) => {
-        // Apply mode-specific processing
-        if (mode === 'chaos') {
-          this.applyChaosMode(image);
-        } else {
-          this.applySaneMode(image);
-        }
+      ImageMagick.ImageMagick.read(inputImageData, (image) => {
+        // Apply processing
+        image.setProfile("icc", state.saneProfileData);
+        image.evaluate(ImageMagick.Channels.RGB, ImageMagick.EvaluateOperator.Log, 30);
 
         // Set output format and generate result
         image.format = ImageMagick.MagickFormat.Png;
@@ -161,7 +116,7 @@ const ImageProcessor = {
           const url = URL.createObjectURL(blob);
 
           // Update UI with result
-          UI.displayOutputImage(url, file.name, mode);
+          UI.displayOutputImage(url, file.name);
           elements.processBtn.disabled = false;
           UI.hideSpinner();
         });
@@ -215,23 +170,34 @@ function setupEventListeners() {
   });
 
   elements.processBtn.addEventListener('click', () => ImageProcessor.processImage());
-
-  // Add mode change listener to update UI accordingly
-  elements.modeRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-      if (elements.outputPreview.style.display !== 'none') {
-        elements.outputPlaceholder.style.display = 'block';
-        elements.outputPreview.style.display = 'none';
-        elements.downloadBtn.style.display = 'none';
-      }
-    });
-  });
 }
 
 // Initialize the application
 async function init() {
   await ImageProcessor.initialize();
   setupEventListeners();
+  
+  // Automatically load and process bufo.png
+  try {
+    const response = await fetch('./bufo.png');
+    const blob = await response.blob();
+    const file = new File([blob], 'bufo.png', { type: 'image/png' });
+    
+    // Update file input with the loaded file
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    elements.fileInput.files = dataTransfer.files;
+    
+    // Display the input image
+    handleFileSelect(file);
+    
+    // Process the image automatically
+    setTimeout(() => {
+      ImageProcessor.processImage();
+    }, 500); // Small delay to ensure everything is loaded
+  } catch (error) {
+    console.error('Error auto-loading image:', error);
+  }
 }
 
 init();
