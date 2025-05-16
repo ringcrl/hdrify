@@ -16,7 +16,8 @@ const elements = {
 const state = {
   magickReady: false,
   saneProfileData: null,
-  selectedFile: null
+  selectedFile: null,
+  isMobile: window.innerWidth <= 768
 };
 
 // UI elements
@@ -43,6 +44,13 @@ const UI = {
     elements.inputPreview.src = dataUrl;
     elements.inputPreview.style.display = 'block';
     elements.inputPlaceholder.style.display = 'none';
+    
+    if (state.isMobile) {
+      // Scroll to processing button on mobile after image selection
+      setTimeout(() => {
+        elements.processBtn.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
   },
 
   displayOutputImage(url, filename) {
@@ -52,6 +60,13 @@ const UI = {
     elements.downloadBtn.href = url;
     elements.downloadBtn.style.display = 'inline-flex';
     elements.downloadBtn.download = `hdrified_${filename.split('.')[0]}.png`;
+    
+    if (state.isMobile) {
+      // Scroll to the output image on mobile
+      setTimeout(() => {
+        elements.outputPreview.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
   },
 
   updateUploadZoneBorder(color) {
@@ -142,10 +157,26 @@ function handleFileSelect(file) {
   reader.readAsDataURL(file);
 }
 
+// Handle resize events for responsive behavior
+function handleResize() {
+  state.isMobile = window.innerWidth <= 768;
+}
+
 // Event listeners
 function setupEventListeners() {
+  // Click events
   elements.uploadZone.addEventListener('click', () => elements.fileInput.click());
+  
+  // Touch events for better mobile experience
+  elements.uploadZone.addEventListener('touchstart', () => {
+    UI.updateUploadZoneBorder('#666');
+  }, { passive: true });
+  
+  elements.uploadZone.addEventListener('touchend', () => {
+    UI.updateUploadZoneBorder('#ccc');
+  }, { passive: true });
 
+  // Drag and drop events
   elements.uploadZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     UI.updateUploadZoneBorder('#666');
@@ -170,6 +201,19 @@ function setupEventListeners() {
   });
 
   elements.processBtn.addEventListener('click', () => ImageProcessor.processImage());
+  
+  // Handle window resize for responsive behavior
+  window.addEventListener('resize', handleResize, { passive: true });
+  
+  // Prevent double-tap zoom on mobile
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    const DOUBLE_TAP_THRESHOLD = 300;
+    if (now - (window.lastTouchEnd || 0) < DOUBLE_TAP_THRESHOLD) {
+      e.preventDefault();
+    }
+    window.lastTouchEnd = now;
+  }, { passive: false });
 }
 
 // Initialize the application
